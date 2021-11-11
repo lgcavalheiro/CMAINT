@@ -1,0 +1,63 @@
+#!/bin/sh
+
+ROOTDIR=$(pwd)
+SRCDIR="src"
+BUILDDIR="build"
+PROJECTNAME="test"
+
+mkdir $SRCDIR
+mkdir $BUILDDIR
+
+[ ! -e $SRCDIR/main.c ] && touch $SRCDIR/main.c || :> $SRCDIR/main.c
+printf "#include <stdio.h>
+
+int main() { printf(\"Hello World!\"); return 0; }" >> $SRCDIR/main.c
+
+[ ! -e CMakeLists.txt ] && touch CMakeLists.txt || :> CMakeLists.txt
+printf "cmake_minimum_required(VERSION $(cmake --version | grep version | cut -d' ' -f3))
+
+project($PROJECTNAME)
+
+add_executable(\${PROJECT_NAME} $SRCDIR/main.c)
+" >> CMakeLists.txt
+
+[ ! -e crun.sh ] && touch crun.sh || :> crun.sh
+printf "#!/bin/sh
+
+ACTIONS=\"\"
+
+while getopts 'brm' OPT; do
+	case \$OPT in
+		b)
+			ACTIONS=\"\${ACTIONS} 1\" ;;
+		r)
+			ACTIONS=\"\${ACTIONS} 2\";;
+		m)
+			ACTIONS=\"\${ACTIONS} 3\" ;;
+		?)
+			echo \"No mathing option found or provided\" ;;
+	esac
+done
+shift \"\$((OPTIND - 1))\"
+
+for ACTION in \${ACTIONS}
+do
+	case \$ACTION in
+		1)
+			printf \"> Building...\\\n\"
+			make -C $BUILDDIR
+			printf \"\\\n\" ;;
+		2)
+			printf \"> Executing...\\\n\"
+			./$BUILDDIR/$PROJECTNAME
+			printf \"\\\n\" ;;
+		3)
+			printf \"> Configuring...\\\n\"
+			cmake -S $ROOTDIR -B $BUILDDIR
+			printf \"\\\n\" ;;
+		?)
+			echo \"ERROR\" && exit 1 ;;
+	esac
+done
+" >> crun.sh
+chmod 0755 ./crun.sh
