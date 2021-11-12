@@ -1,63 +1,118 @@
 #!/bin/sh
 
+# === GLOBALS ===
 ROOTDIR=$(pwd)
 SRCDIR="src"
 BUILDDIR="build"
-PROJECTNAME="test"
+PROJECTNAME="cmaint_project"
 
-mkdir $SRCDIR
-mkdir $BUILDDIR
+# === FUNCS ===
+create_folders() {
+	[ ! -e $SRCDIR ] && mkdir -p $ROOTDIR/$SRCDIR
+	[ ! -e $BUILDDIR ] && mkdir -p $ROOTDIR/$BUILDDIR
+}
 
-[ ! -e $SRCDIR/main.c ] && touch $SRCDIR/main.c || :> $SRCDIR/main.c
-printf "#include <stdio.h>
+create_mainc() {
+	[ ! -e $ROOTDIR/$SRCDIR/main.c ] && touch $ROOTDIR/$SRCDIR/main.c || : >$ROOTDIR/$SRCDIR/main.c
+	printf "#include <stdio.h>
 
-int main() { printf(\"Hello World!\"); return 0; }" >> $SRCDIR/main.c
+int main() { printf(\"Hello World!\"); return 0; }" >>$ROOTDIR/$SRCDIR/main.c
+}
 
-[ ! -e CMakeLists.txt ] && touch CMakeLists.txt || :> CMakeLists.txt
-printf "cmake_minimum_required(VERSION $(cmake --version | grep version | cut -d' ' -f3))
+create_cmakelists() {
+	[ ! -e $ROOTDIR/CMakeLists.txt ] && touch $ROOTDIR/CMakeLists.txt || : >$ROOTDIR/CMakeLists.txt
+	printf "cmake_minimum_required(VERSION $(cmake --version | grep version | cut -d' ' -f3))
 
 project($PROJECTNAME)
 
 add_executable(\${PROJECT_NAME} $SRCDIR/main.c)
-" >> CMakeLists.txt
+	" >>$ROOTDIR/CMakeLists.txt
+}
 
-[ ! -e crun.sh ] && touch crun.sh || :> crun.sh
-printf "#!/bin/sh
+create_crun() {
+	[ ! -e $ROOTDIR/crun.sh ] && touch $ROOTDIR/crun.sh || : >$ROOTDIR/crun.sh
+	printf "#!/bin/sh
 
 ACTIONS=\"\"
 
-while getopts 'brm' OPT; do
+while getopts 'brc' OPT; do
 	case \$OPT in
 		b)
 			ACTIONS=\"\${ACTIONS} 1\" ;;
 		r)
 			ACTIONS=\"\${ACTIONS} 2\";;
-		m)
+		c)
 			ACTIONS=\"\${ACTIONS} 3\" ;;
 		?)
-			echo \"No mathing option found or provided\" ;;
+			echo \"No matching option found or provided\" ;;
 	esac
 done
-shift \"\$((OPTIND - 1))\"
 
 for ACTION in \${ACTIONS}
 do
 	case \$ACTION in
 		1)
 			printf \"> Building...\\\n\"
-			make -C $BUILDDIR
+			make -C $ROOTDIR/$BUILDDIR
 			printf \"\\\n\" ;;
 		2)
 			printf \"> Executing...\\\n\"
-			./$BUILDDIR/$PROJECTNAME
+			$ROOTDIR/$BUILDDIR/$PROJECTNAME
 			printf \"\\\n\" ;;
 		3)
 			printf \"> Configuring...\\\n\"
-			cmake -S $ROOTDIR -B $BUILDDIR
+			cmake -S $ROOTDIR -B $ROOTDIR/$BUILDDIR
 			printf \"\\\n\" ;;
 		?)
 			echo \"ERROR\" && exit 1 ;;
 	esac
 done
-" >> crun.sh
-chmod 0755 ./crun.sh
+	" >>$ROOTDIR/crun.sh
+	chmod 0755 $ROOTDIR/crun.sh
+}
+
+create_project() {
+	create_folders
+	create_mainc
+	create_cmakelists
+	create_crun
+}
+
+print_help() {
+	cat << "EOF"
+USAGE: cmaint <options>
+-h			Display this message
+-r <root_dir>		Overrides the root directory of the project (default is $PWD)
+-p <project_name>	Overrides the project name (default is cmaint_project)
+-b <build_dir>		Overrides the build folder of the project (default is build)
+-s <src_dir>		Overrides the source folder of the project (default is src)
+
+EOF
+exit 0
+}
+
+# === INIT ===
+while getopts 's:b:p:r:h' OPT; do
+	case $OPT in
+	s)
+		SRCDIR=${OPTARG}
+		;;
+	b)
+		BUILDDIR=${OPTARG}
+		;;
+	p)
+		PROJECTNAME=${OPTARG}
+		;;
+	h)
+		print_help
+		;;
+	r)
+		ROOTDIR=${OPTARG}
+		;;
+	?)
+		printf "No matching option found or arguments were not provided. Aborting...\n\n" && print_help
+		;;
+	esac
+done
+
+create_project
