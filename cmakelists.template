@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION %VERSION%)
+
+project(%PROJECTNAME%)
+
+add_executable(${PROJECT_NAME} %SRCDIR%/main.c)

@@ -1,0 +1,56 @@
+ACTIONS=""
+
+print_help() {
+	cat <<"EOF"
+USAGE: crun.sh <options>
+-h	Display this message
+-r 	Run the application
+-b	Build the application
+-c	Configure CMake
+
+EOF
+	exit 0
+}
+
+while getopts 'cbrh' OPT; do
+	case $OPT in
+	b)
+		ACTIONS="${ACTIONS} 1"
+		;;
+	r)
+		ACTIONS="${ACTIONS} 2"
+		;;
+	c)
+		ACTIONS="${ACTIONS} 3"
+		;;
+	h)
+		print_help
+		;;
+	?*)
+		echo "No matching option found" && print_help
+		;;
+	esac
+done
+
+for ACTION in ${ACTIONS}; do
+	case $ACTION in
+	1)
+		printf "> Building...\n"
+		make -C %ROOTDIR%/%BUILDDIR%
+		printf "\n"
+		;;
+	2)
+		printf "> Executing...\n"
+		%ROOTDIR%/%BUILDDIR%/%PROJECTNAME%
+		printf "\n"
+		;;
+	3)
+		printf "> Configuring...\n"
+		cmake -S %ROOTDIR% -B %ROOTDIR%/%BUILDDIR%
+		printf "\n"
+		;;
+	?)
+		echo "ERROR" && exit 1
+		;;
+	esac
+done
