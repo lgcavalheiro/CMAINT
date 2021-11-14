@@ -1,18 +1,49 @@
 ACTIONS=""
+VERSION_NUMBER=""
+VERSION_FILE="%ROOTDIR%/build-number.txt"
 
 print_help() {
 	cat <<"EOF"
 USAGE: crun.sh <options>
--h	Display this message
--r 	Run the application
--b	Build the application
--c	Configure CMake
-
+-h		Display this message
+-r 		Run the application
+-b		Build the application
+-c		Configure CMake
+-v <version> 	Configure version number (options are: major, minor and patch)
 EOF
 	exit 0
 }
 
-while getopts 'cbrh' OPT; do
+configure_version() {
+	case $VERSION_NUMBER in
+	patch)
+		VERSION=$(cat $VERSION_FILE)
+		NUMBER=$(expr $(echo $VERSION | cut -d. -f3) + "1")
+		NEW_VERSION=$(echo $VERSION | cut -d. -f1).$(echo $VERSION | cut -d. -f2).$NUMBER
+		sed -i "s/$VERSION/$NEW_VERSION/g" $VERSION_FILE
+		printf "Updated to version $(cat $VERSION_FILE)\n"
+		;;
+	minor)
+		VERSION=$(cat $VERSION_FILE)
+		NUMBER=$(expr $(echo $VERSION | cut -d. -f2) + "1")
+		NEW_VERSION=$(echo $VERSION | cut -d. -f1).$NUMBER.0
+		sed -i "s/$VERSION/$NEW_VERSION/g" $VERSION_FILE
+		printf "Updated to version $(cat $VERSION_FILE)\n"
+		;;
+	major)
+		VERSION=$(cat $VERSION_FILE)
+		NUMBER=$(expr $(echo $VERSION | cut -d. -f1) + "1")
+		NEW_VERSION=$NUMBER.0.0
+		sed -i "s/$VERSION/$NEW_VERSION/g" $VERSION_FILE
+		printf "Updated to version $(cat $VERSION_FILE)\n"
+		;;
+	?*)
+		echo "Unknown version number. Available are: patch, minor and major" && exit 1
+		;;
+	esac
+}
+
+while getopts 'cbrhv:' OPT; do
 	case $OPT in
 	b)
 		ACTIONS="${ACTIONS} 1"
@@ -25,6 +56,10 @@ while getopts 'cbrh' OPT; do
 		;;
 	h)
 		print_help
+		;;
+	v)
+		ACTIONS="${ACTIONS} 4"
+		VERSION_NUMBER="${OPTARG}"
 		;;
 	?*)
 		echo "No matching option found" && print_help
@@ -47,6 +82,11 @@ for ACTION in ${ACTIONS}; do
 	3)
 		printf "> Configuring...\n"
 		cmake -S %ROOTDIR% -B %ROOTDIR%/%BUILDDIR%
+		printf "\n"
+		;;
+	4)
+		printf "> Updating version...\n"
+		configure_version
 		printf "\n"
 		;;
 	?)
