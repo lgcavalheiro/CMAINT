@@ -14,7 +14,7 @@ create_folders() {
 
 create_mainc() {
 	[ ! -e $ROOTDIR/$SRCDIR/main.c ] && touch $ROOTDIR/$SRCDIR/main.c || : >$ROOTDIR/$SRCDIR/main.c
-	printf "#include <stdio.h>\n\nint main() { printf(\"Hello World!\"); return 0; }" >>$ROOTDIR/$SRCDIR/main.c
+	sed -e "s/%ROOTDIR%/$ROOTDIR/g" main.template >>$ROOTDIR/$SRCDIR/main.c
 }
 
 create_cmakelists() {
@@ -29,11 +29,8 @@ create_crun() {
 	chmod 0755 $ROOTDIR/crun.sh
 }
 
-create_project() {
-	create_folders
-	create_mainc
-	create_cmakelists
-	create_crun
+create_version_file() {
+	echo "0.0.1" >>$ROOTDIR/build-number.txt
 }
 
 print_help() {
@@ -73,4 +70,9 @@ while getopts 's:b:p:r:h' OPT; do
 	esac
 done
 
-create_project
+# === MAIN ===
+create_folders
+create_mainc
+create_cmakelists
+create_crun
+create_version_file
