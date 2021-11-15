@@ -5,6 +5,7 @@ ROOTDIR=$(pwd)
 SRCDIR="src"
 BUILDDIR="build"
 PROJECTNAME="cmaint_project"
+USE_GIT=0
 
 # === FUNCS ===
 create_folders() {
@@ -33,6 +34,12 @@ create_version_file() {
 	echo "0.0.1" >>$ROOTDIR/build-number.txt
 }
 
+use_git() {
+	[ ! -e $ROOTDIR/external ] && mkdir -p $ROOTDIR/external
+	git init $ROOTDIR
+	sed -e "s/%BUILDDIR%/$BUILDDIR/g" gitignore.template >>$ROOTDIR/.gitignore
+}
+
 print_help() {
 	cat <<"EOF"
 USAGE: cmaint <options>
@@ -41,13 +48,13 @@ USAGE: cmaint <options>
 -p <project_name>	Overrides the project name (default is cmaint_project)
 -b <build_dir>		Overrides the build folder of the project (default is build)
 -s <src_dir>		Overrides the source folder of the project (default is src)
-
+-g			Uses git and initializes the local repository at root directory of project
 EOF
 	exit 0
 }
 
 # === INIT ===
-while getopts 's:b:p:r:h' OPT; do
+while getopts 's:b:p:r:hg' OPT; do
 	case $OPT in
 	s)
 		SRCDIR=${OPTARG}
@@ -64,6 +71,9 @@ while getopts 's:b:p:r:h' OPT; do
 	r)
 		ROOTDIR=${OPTARG}
 		;;
+	g)
+		USE_GIT=1
+		;;
 	?)
 		printf "No matching option found or arguments were not provided. Aborting...\n\n" && print_help
 		;;
@@ -76,3 +86,5 @@ create_mainc
 create_cmakelists
 create_crun
 create_version_file
+[ $USE_GIT -eq 1 ] && use_git
+
