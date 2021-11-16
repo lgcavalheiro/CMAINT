@@ -2,6 +2,7 @@
 
 INSTALL_PREFIX=/usr/bin
 CONFIG_PREFIX=/.config/cmaint
+PROJECT=/cmaint
 
 all: install
 
@@ -11,8 +12,8 @@ configure:
 
 install: configure
 	cp cmaint $(INSTALL_PREFIX)
-	chmod 0755 $(INSTALL_PREFIX)/cmaint
+	chmod 0755 $(INSTALL_PREFIX)$(PROJECT)
 
 uninstall:
 	$(RM) -rf $(HOME)$(CONFIG_PREFIX)
-	$(RM) $(INSTALL_PREFIX)/cmaint
+	$(RM) $(INSTALL_PREFIX)$(PROJECT)
